@@ -24,6 +24,7 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
     private final String sonarBaseUrl;
     private final String sonarProjectsList;
 
+    private final String sonarFilter;
     private final int sonarPriorityThreshold;
     private final int sonarNewIssuesPriorityThreshold;
 
@@ -49,7 +50,7 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
 
     @DataBoundConstructor
     public SonarIssuesPortlet(String name, String sonarBaseUrl,
-            String sonarProjectsList, int sonarPriorityThreshold, int sonarAssigneeStatus, boolean sonarShowAssigneeBar,
+            String sonarProjectsList, String sonarFilter, int sonarPriorityThreshold, int sonarAssigneeStatus, boolean sonarShowAssigneeBar,
             // alerts
             boolean showAlerts, String metricsCheckedForAlerts, String alwaysShowMetrics,
             // advanced
@@ -58,9 +59,11 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
             String sonarApiPw, String labelAssigneesRanking, int maxAssigneesInRanking) {
         super(name);
         
+
         this.sonarBaseUrl = Utils.normalizeBaseUrl(sonarBaseUrl);   
 
         this.sonarProjectsList = sonarProjectsList;
+        this.sonarFilter = sonarFilter;
 
         this.sonarPriorityThreshold = sonarPriorityThreshold;
 
@@ -97,7 +100,11 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
     public String getSonarProjectsList() {
         return sonarProjectsList;
     }
-
+    
+    public String getsonarFilter() {
+    	return sonarFilter;
+    }
+    
     public int getMaxEntries() {
         return maxEntries > 0 ? maxEntries : 50;
     }
@@ -134,7 +141,6 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
 	public String getSonarApiUser() {
 		return sonarApiUser;
 	}
-
 
 	public String getSonarApiPw() {
 		return sonarApiPw;
@@ -175,6 +181,11 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
 	public String getSonarProjectsJson() {
         String projectsJson = Utils.configListToJsonList(sonarProjectsList);
         return projectsJson;
+    }
+
+	public String getSonarFilterJson() {
+        String filterJson = Utils.configListToJsonList(sonarFilter);
+        return filterJson;
     }
 
     public String getSonarPrioritiesJson() {

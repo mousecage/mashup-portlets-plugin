@@ -16,10 +16,10 @@ td.sTableTop { vertical-align: top; }
 <st:bind var="mashupPlugin_${it.id}" value="${it}"/>
 <script type="text/javascript"><![CDATA[
 
-new function(divId, rootUrl, ajaxViaJenkins, sonarBase, sonarProjects, sonarPriorities, 
+new function(divId, rootUrl, ajaxViaJenkins, sonarBase, sonarProjects, sonarFilter, sonarPriorities, 
     sonarPriorityThreshold, maxEntries, deltaDaysForNewIssues, sonarNewIssuesPriorities, 
     prioValueByName, sonarAssigneeStatus, assigneeStatusValueByNameJson, sonarShowAssigneeBar, 
-    labelAssigneesRanking, maxAssigneesInRanking, showAlerts, metricsCheckedForAlerts, alwaysShowMetrics) 
+    labelAssigneesRanking, maxAssigneesInRanking, showAlerts, metricsCheckedForAlerts, alwaysShowMetrics, LOGGER) 
 {
 
       var divSelect = "#" + divId;
@@ -48,6 +48,7 @@ new function(divId, rootUrl, ajaxViaJenkins, sonarBase, sonarProjects, sonarPrio
       function getUserNameWithLinkForLogin(login) {
           if(login) {
               var componentRoots = sonarProjects.join(",");
+              var filterFilter = sonarFilter;
               var sonarSeverities = sonarPriorities.join(",");
           
               var name = getUserNameForLogin(login);
@@ -211,16 +212,46 @@ new function(divId, rootUrl, ajaxViaJenkins, sonarBase, sonarProjects, sonarPrio
                 userNameLookupTable[user.login] = user.name;
             });    
       }    
+      
+      
+      
+      
+      var testResponseObject; 
+      async function projectsSearch() {
+      	
+      		var filter = sonarFilter.join(",");
+      		var projectSearchUrl = sonarBase + "/api/components/search?format=json&qualifiers=TRK&q="+filter;
+      	
+      	   console.log('projectSearchUrl' + projectSearchUrl);
+      	   return new Promise(function(resolves, reject) {
+           ajaxViaJenkins(projectSearchUrl, function resolve(resp) { 
+                testResponseObject = resp;
+                resolves(testResponseObject);
+          	});
+       	  });
+      }
 
-    
-      function loadIssues() {
       
-          Q(divSelect).append("<br/><br/>Projects:<br/>" + sonarProjects.join('<br/>')+"<br/>");      
-      
-          var componentRoots = sonarProjects.join(",");
+      async function loadIssues() {
+          Q(divSelect).append("<br/><br/>Projects:<br/>" + sonarProjects.join('<br/>')+"<br/>"); 
+      	  await projectsSearch();
+      	  var responseObject = testResponseObject.responseObject();
+      	   
+      	  Q.each(responseObject.components, function(index, issue) {
+					    sonarProjects.push(issue.key);
+                });	
+          
           var sonarSeverities = sonarPriorities.join(",");
+          var filter = sonarFilter.join(",");
+          console.log('JEFF');
+          var done = await projectsSearch();
+          var componentRoots = sonarProjects.join(",");
+          console.error("outside" + componentRoots);
+          
           // adding param additionalFields for Sonar 5.x
           var projectIssuesUrl = sonarBase + "/api/issues/search?format=json&additionalFields=users,languages&pageSize=-1&resolved=false&severities="+sonarSeverities+"&componentRoots=" + componentRoots;
+          
+          console.error(projectIssuesUrl);
           
           if(showOnlyAssigned()) {
               projectIssuesUrl += "&assigned=true";
@@ -228,7 +259,6 @@ new function(divId, rootUrl, ajaxViaJenkins, sonarBase, sonarProjects, sonarPrio
               projectIssuesUrl += "&assigned=false";
           }
           
-          // console.log('projectIssuesUrl: ', projectIssuesUrl);
           ajaxViaJenkins(projectIssuesUrl,  function(resp) {
                 var text = resp.responseText;
                 
@@ -245,27 +275,31 @@ new function(divId, rootUrl, ajaxViaJenkins, sonarBase, sonarProjects, sonarPrio
 
                 populateUserNameLookupTable(responseObject.users);
                 
-                // console.log('issues in response: ', responseObject.issues);
-                
                 var issueList = [];
                 
                 var today = new Date();
                 Q.each(responseObject.issues, function(index, issue) { 
-
+					
                     issue.creationDate = new Date(issue.creationDate);         
                     var difference = today.getTime() - issue.creationDate.getTime();
                     var daysDiff = Math.round(difference/(1000*60*60*24));
                     issue.isNew = ((daysDiff <= deltaDaysForNewIssues) && Q.inArray(issue.severity, sonarNewIssuesPriorities)>-1);   
                     
-                    issueList.push(issue);   
+                    if(issue.component.includes(filter))
+                    	issueList.push(issue);   
                 });
 
                 displayIssues(issueList);
           });      
       }
 
-      Q(document).ready(loadIssues);
+      function ca() {
+      	loadIssues();
+      }
 
+      Q(document).ready(ca)
+
+      
       // metrics & alerts
       var divAlertsSelect = "#" + divId + "_alerts";
       var metricsAndAlertsToShow = [];
@@ -340,6 +374,7 @@ new function(divId, rootUrl, ajaxViaJenkins, sonarBase, sonarProjects, sonarPrio
     mashupPlugin_${it.id}.ajaxViaJenkins,
     '${it.sonarBaseUrl}',
     ${it.sonarProjectsJson},
+    ${it.sonarFilterJson},
     ${it.sonarPrioritiesJson},
     ${it.sonarPriorityThreshold},
     ${it.maxEntries},
@@ -353,7 +388,7 @@ new function(divId, rootUrl, ajaxViaJenkins, sonarBase, sonarProjects, sonarPrio
     ${it.maxAssigneesInRanking},
     ${it.showAlerts},
     ${it.metricsCheckedForAlertsJson},
-    ${it.alwaysShowMetricsJson}    
+    ${it.alwaysShowMetricsJson}
 );
 
 ]]></script>
