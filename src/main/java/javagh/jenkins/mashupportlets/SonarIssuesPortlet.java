@@ -104,9 +104,14 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
 
         this.deltaDaysForNewIssues = deltaDaysForNewIssues;
 
-        this.sonarApiUser = credentials.getUsername() != null ? credentials.getUsername():sonarApiUser;
-        this.sonarApiPw = credentials.getPassword().getPlainText() != null ? credentials.getPassword().getPlainText() : sonarApiPw;
-        
+        if( credentials != null ) {
+        	this.sonarApiUser = credentials.getUsername() != null ? credentials.getUsername():sonarApiUser;
+        	this.sonarApiPw = credentials.getPassword().getPlainText() != null ? credentials.getPassword().getPlainText() : sonarApiPw;
+        } else {
+        	this.sonarApiUser = sonarApiUser;
+        	this.sonarApiPw = sonarApiPw;
+        }
+        	
         this.showAlerts = showAlerts;
         this.metricsCheckedForAlerts = metricsCheckedForAlerts;
         this.alwaysShowMetrics = alwaysShowMetrics;
