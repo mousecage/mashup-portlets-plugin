@@ -2,14 +2,28 @@ package javagh.jenkins.mashupportlets;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.model.Item;
 import hudson.plugins.view.dashboard.DashboardPortlet;
+import hudson.security.ACL;
 import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
+
+import java.util.Collections;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.HttpResponse;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
+
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 
 /**
  * Shows SonarQube issues in a portlet.
@@ -24,6 +38,8 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
     private final String sonarBaseUrl;
     private final String sonarProjectsList;
 
+    private final String credentialsId;
+    
     private final String sonarFilter;
     private final int sonarPriorityThreshold;
     private final int sonarNewIssuesPriorityThreshold;
@@ -55,11 +71,21 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
             boolean showAlerts, String metricsCheckedForAlerts, String alwaysShowMetrics,
             // advanced
             int maxEntries, int sonarNewIssuesPriorityThreshold,
-            int deltaDaysForNewIssues, int violationDescriptionMaximumLength, String sonarApiUser, 
+            int deltaDaysForNewIssues, int violationDescriptionMaximumLength, String credentialsId,  String sonarApiUser, 
             String sonarApiPw, String labelAssigneesRanking, int maxAssigneesInRanking) {
         super(name);
+        this.credentialsId = credentialsId;
         
-
+        StandardCredentials c = CredentialsMatchers.firstOrNull(
+        		CredentialsProvider.lookupCredentials(
+        			      StandardCredentials.class,
+        			        this.getDashboard().getOwnerPrimaryView().getOwnerItemGroup(),
+        			      	ACL.SYSTEM,
+        			      	Collections.<DomainRequirement>emptyList()
+        			    ),
+        		CredentialsMatchers.withId(credentialsId));
+        
+        UsernamePasswordCredentialsImpl credentials = (UsernamePasswordCredentialsImpl)c;
         this.sonarBaseUrl = Utils.normalizeBaseUrl(sonarBaseUrl);   
 
         this.sonarProjectsList = sonarProjectsList;
@@ -78,8 +104,8 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
 
         this.deltaDaysForNewIssues = deltaDaysForNewIssues;
 
-        this.sonarApiUser = sonarApiUser;
-        this.sonarApiPw = sonarApiPw;
+        this.sonarApiUser = credentials.getUsername() != null ? credentials.getUsername():sonarApiUser;
+        this.sonarApiPw = credentials.getPassword().getPlainText() != null ? credentials.getPassword().getPlainText() : sonarApiPw;
         
         this.showAlerts = showAlerts;
         this.metricsCheckedForAlerts = metricsCheckedForAlerts;
@@ -112,7 +138,9 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
     public int getMaxAssigneesInRanking() {
         return maxAssigneesInRanking > 0 ? maxAssigneesInRanking : 5;
     }
-
+    public String getCredentialsId () {
+    	return credentialsId;
+    }
     public int getSonarPriorityThreshold() {
         return sonarPriorityThreshold;
     }
@@ -228,12 +256,30 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
             return "SonarQube Issues";
         }
 
-        public ListBoxModel doFillSonarPriorityThresholdItems() {
-            ListBoxModel items = new ListBoxModel();
-            for (SonarPriority sonarPriority : SonarPriority.values()) {
-                items.add(sonarPriority.name(), String.valueOf(sonarPriority.ordinal()));
+
+        public ListBoxModel doFillCredentialsIdItems(
+                @AncestorInPath Item item,
+                @QueryParameter String credentialsId) {
+        	if (!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
+                return new StandardListBoxModel().includeCurrentValue(credentialsId);
             }
-            return items;
+            return new StandardListBoxModel()
+                    .includeEmptyValue()
+                    .includeMatchingAs(ACL.SYSTEM,
+                            item,
+                    		//Jenkins.getInstance(),
+                            StandardCredentials.class,
+                            Collections.<DomainRequirement>emptyList(),
+                            CredentialsMatchers.always()
+                    ).includeCurrentValue(credentialsId);
+        }
+        
+        public ListBoxModel doFillSonarPriorityThresholdItems() {
+        	ListBoxModel items = new ListBoxModel();
+        	for (SonarPriority sonarPriority : SonarPriority.values()) {
+        		items.add(sonarPriority.name(), String.valueOf(sonarPriority.ordinal()));		
+        	}
+        	return items;
         }
 
         public ListBoxModel doFillSonarNewIssuesPriorityThresholdItems() {

@@ -19,7 +19,7 @@ td.sTableTop { vertical-align: top; }
 new function(divId, rootUrl, ajaxViaJenkins, sonarBase, sonarProjects, sonarFilter, sonarPriorities, 
     sonarPriorityThreshold, maxEntries, deltaDaysForNewIssues, sonarNewIssuesPriorities, 
     prioValueByName, sonarAssigneeStatus, assigneeStatusValueByNameJson, sonarShowAssigneeBar, 
-    labelAssigneesRanking, maxAssigneesInRanking, showAlerts, metricsCheckedForAlerts, alwaysShowMetrics, LOGGER) 
+    labelAssigneesRanking, maxAssigneesInRanking, showAlerts, metricsCheckedForAlerts, alwaysShowMetrics) 
 {
 
       var divSelect = "#" + divId;
