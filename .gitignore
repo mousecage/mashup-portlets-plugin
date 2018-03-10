@@ -3,5 +3,7 @@
 /.classpath
 /.settings
 /work
+/.idea
+mashup-portlets-plugin.iml
 .DS_Store
 release-simple.sh

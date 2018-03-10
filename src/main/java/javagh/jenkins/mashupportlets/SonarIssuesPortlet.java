@@ -71,8 +71,7 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
             boolean showAlerts, String metricsCheckedForAlerts, String alwaysShowMetrics,
             // advanced
             int maxEntries, int sonarNewIssuesPriorityThreshold,
-            int deltaDaysForNewIssues, int violationDescriptionMaximumLength, String credentialsId,  String sonarApiUser, 
-            String sonarApiPw, String labelAssigneesRanking, int maxAssigneesInRanking) {
+            int deltaDaysForNewIssues, int violationDescriptionMaximumLength, String credentialsId, String labelAssigneesRanking, int maxAssigneesInRanking) {
         super(name);
         this.credentialsId = credentialsId;
         
@@ -104,13 +103,9 @@ public class SonarIssuesPortlet extends AbstractMashupPortlet {
 
         this.deltaDaysForNewIssues = deltaDaysForNewIssues;
 
-        if( credentials != null ) {
-        	this.sonarApiUser = credentials.getUsername() != null ? credentials.getUsername():sonarApiUser;
-        	this.sonarApiPw = credentials.getPassword().getPlainText() != null ? credentials.getPassword().getPlainText() : sonarApiPw;
-        } else {
-        	this.sonarApiUser = sonarApiUser;
-        	this.sonarApiPw = sonarApiPw;
-        }
+        this.sonarApiUser = credentials.getUsername();
+        this.sonarApiPw = credentials.getPassword().getPlainText();
+
         	
         this.showAlerts = showAlerts;
         this.metricsCheckedForAlerts = metricsCheckedForAlerts;
